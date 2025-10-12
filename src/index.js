@@ -66,8 +66,7 @@ app.get('/x', (req, res) => {
 });
 
 app.get('/youtube', (req, res) => {
-    res.send('<h2>CHai AUr COde</h2>');
+    res.send('<h2>Chai Aur Code</h2>');
 });
-/* function print() {
-    console.log("Nothing Found:");
-} */
+
+
