@@ -11,7 +11,7 @@ app.use(
   cors({
     // cors is a middleware that allows you to make requests to your API from different domains.
     origin: process.env.CORS_ORIGIN, // Which websites can access your API
-    credentials: true, // ⚠️ You wrote "Credential" - should be "credentials"
+    credentials: true,
   }),
 );
 
@@ -26,14 +26,4 @@ app.use(express.static("public"));
 
 // 5. Parse cookies
 app.use(cookieParser());
-
-app.get("/", (req, res) => {
-  res.send("Hey there! Welcome to the BloodConnect Backend");
-});
-
-app.post("/user", (req, res) => {
-  console.log("Received data:", req.body);
-  res.json({ message: "User Received", user: res.body });
-});
-
 export { app };
