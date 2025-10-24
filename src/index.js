@@ -3,16 +3,16 @@ import connectDB from "./db/index.js";
 import { app } from "./app.js";
 
 dotenv.config();
-
+const PORT = process.env.PORT || 8000;
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
-      console.log(`Server is running at PORT ${process.env.PORT}`);
+    app.listen(PORT, () => {
+      console.log(`Server is running at PORT http://localhost:${PORT}`);
     });
     app.on("error", (error) => {
       console.log(`Error at Connection time: ${error}`);
     });
   })
   .catch((error) => {
-    console.error(`MONGODB Connection failed !! ${error}`);
+    console.error(`MONGODB CONNECTION FAILED !! ${error}`);
   });
