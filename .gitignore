@@ -1,3 +1,12 @@
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.localgi
+.env.production.local
+.env.local
+.env
+env.*
+*.env
 
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md
@@ -9,9 +18,6 @@
 .augment/rules/byterover-rules.md
 AGENT.md
 node_modules/*
-
-# Created by https://www.toptal.com/developers/gitignore/api/node
-# Edit at https://www.toptal.com/developers/gitignore?templates=node
 
 ### Node ###
 # Logs
@@ -88,12 +94,7 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
