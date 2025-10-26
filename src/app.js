@@ -7,6 +7,7 @@ dotenv.config();
 
 const app = express();
 
+// set up whole middleware configurations
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
@@ -17,12 +18,12 @@ app.use(
   cookieParser(),
 );
 
-//routes import
+// routes import
 import userRouter from "./routes/user.routes.js";
 
-//routes Declaration
-
+// routes Declaration
+// Here User hit and router just pass it to UserRouter
 app.use("/api/v1/users", userRouter);
 
-//http://localhost:8000/api/v1/users/register
+// http://localhost:8000/api/v1/users/register
 export { app };
