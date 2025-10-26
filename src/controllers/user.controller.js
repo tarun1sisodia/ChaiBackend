@@ -30,7 +30,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // checking if user exists or not with email or username
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
 
@@ -43,6 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // we are receiving the path of file of localServer and passing in new vars
   const avatarLocalpath = req.files?.avatar[0]?.path;
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  console.log(req.files);
 
   // Checking if Avatar is on Local server or not.
   if (!avatarLocalpath) throw new ApiError(400, "Avatar file is required");
@@ -55,6 +56,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!avatar) throw new ApiError(400, "Avatar file is required");
   // if (!coverImage) throw new ApiError(400, "Cover Image file is required");
 
+  // Attempting to Create user in MongoDB
   // Creating Account on MongoDB
   const user = await User.create({
     fullName,
@@ -64,6 +66,11 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     username: username.toLowerCase(),
   });
+
+  console.log("✅ User created successfully:", user._id);
+  console.log("Email:", user.email);
+  console.log("Password hash:", user.password);
+
   // making an api Call but suring ourself user is created and has id
   const createdUser = await User.findById(user._id).select(
     // Removing the password and refreshtoken automatically

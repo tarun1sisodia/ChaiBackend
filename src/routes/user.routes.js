@@ -16,7 +16,7 @@ router.route("/register").post(
   registerUser,
 );
 router.route("/login").get(loginUser);
-// console.log(router);
+console.log(router);
 // console.log(upload.fields());
 
 export default router;

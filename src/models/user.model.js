@@ -51,9 +51,14 @@ const userSchema = new mongoose.Schema(
 );
 // added the logic to  hash the password before saving it if password is being modified.
 userSchema.pre("save", async function (next) {
-  if (!this.modified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
+  // fixed the isModified Typo Error
+  if (!this.isModified("password")) return next();
+  try {
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
