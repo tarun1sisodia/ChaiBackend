@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
-
+// Designed the Schema rules or constraints to store data in mongodb
 const videoSchema = new Schema(
   {
     videoFile: {
@@ -36,8 +36,6 @@ const videoSchema = new Schema(
       ref: "User",
     },
   },
-  { timestamps: true },
-).
-
-videoSchema.plugin(mongooseAggregatePaginate);
+  { timestamps: true }, //for default createdAt, updatedAt
+).videoSchema.plugin(mongooseAggregatePaginate);
 export const Video = mongoose.model("Video", videoSchema);

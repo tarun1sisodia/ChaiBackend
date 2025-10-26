@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema(
     },
     watchHistory: [
       {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "Video",
       },
     ],
@@ -49,10 +49,10 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-//added the logic to  hash the password before saving it if password is being modified.
+// added the logic to  hash the password before saving it if password is being modified.
 userSchema.pre("save", async function (next) {
   if (!this.modified("password")) return next();
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -60,7 +60,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-//Midldlewares
+// Midldlewares
 
 userSchema.methods.generateAccessToken = async function () {
   jwt.sign(
@@ -89,6 +89,4 @@ userSchema.methods.generateRefreshToken = async function () {
   );
 };
 
-const User = mongoose.model("User", userSchema);
-
-export { User };
+export const User = mongoose.model("User", userSchema);
