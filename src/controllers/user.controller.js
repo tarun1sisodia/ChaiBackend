@@ -41,8 +41,23 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // confusin for me now, need to revise and understand it more better
   // we are receiving the path of file of localServer and passing in new vars
+  // optional Chaining
+  // or Use Clasical IF else to debug
   const avatarLocalpath = req.files?.avatar[0]?.path;
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  console.log(avatarLocalpath[1]?.path);
+
+  /*  let coverImageLocalPath;
+
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  );
+  {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  } */
   console.log(req.files);
 
   // Checking if Avatar is on Local server or not.
@@ -72,6 +87,7 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log("Password hash:", user.password);
 
   // making an api Call but suring ourself user is created and has id
+  // this makes our password and refreshtoken invisible to others
   const createdUser = await User.findById(user._id).select(
     // Removing the password and refreshtoken automatically
     "-password -refreshToken",
