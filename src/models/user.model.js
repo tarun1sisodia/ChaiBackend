@@ -66,7 +66,8 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 // Midldlewares
-
+// Tokens are same only difference is EXPIRY Duration of them.
+// Access Token - SHORT
 userSchema.methods.generateAccessToken = async function () {
   jwt.sign(
     {
@@ -82,6 +83,7 @@ userSchema.methods.generateAccessToken = async function () {
   );
 };
 
+//  refresh Token - LONG Term
 userSchema.methods.generateRefreshToken = async function () {
   jwt.sign(
     {
@@ -95,3 +97,17 @@ userSchema.methods.generateRefreshToken = async function () {
 };
 
 export const User = mongoose.model("User", userSchema);
+/* 
+Think of a hotel:
+
+Access Token = Your room key card
+  Works for a short time (e.g., until checkout)
+  Gives you access to your room
+  If stolen, limited damage (expires soon)
+
+
+Refresh Token = Your ID at the front desk
+  Lasts much longer
+  Used to get a NEW room key when the old one expires
+  Kept more securely
+*/

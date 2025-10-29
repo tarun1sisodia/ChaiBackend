@@ -4,6 +4,27 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 
+// Seperate method for Generate access and refresh token
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    // find user by ID in monoose
+    const user = await User.findById(userId);
+
+    // generating token using our defined methods
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    // now save them in DB / MongoDB
+    // use document/ object to save
+    await user.save({ validateBeforeSave: false });
+
+    // Return the Tokens to user
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(500, "Failed to Generate Tokens");
+  }
+};
+
 // Register User function
 const registerUser = asyncHandler(async (req, res) => {
   // get user details from frontend
@@ -101,13 +122,71 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
-
 // login User
 const loginUser = asyncHandler(async (req, res) => {
-  res.status(200).json({
-    message: "User Found",
+  // Algorithm for LOGIN USER
+  // 1. Get user details from frontend (username/email, password)
+  // 2. Validation - check if fields are not empty
+  // 3. Check if user exists in DB (by username or email)
+  // 4. If user doesn't exist, return error or message to use using APIError
+  // 5. Compare plain password with hashed password in DB (using bcrypt.compare)
+  // 6. If password doesn't match, return error
+  // 7. Generate access token and refresh token
+  // 8. Save refresh token to DB (in user document)
+  // 9. Send tokens via cookies (httpOnly, secure)
+  // 10. Return response with user data (exclude password)
+
+  const { username, email, password } = req.body;
+
+  // if username NOR email entered then ..
+  if (!username || !email)
+    throw new ApiError(400, "username or email is required");
+
+  // Logic to find user
+  const user = await User.findOne({
+    // Finding user using either find email or username
+    $or: [{ email }, { username }],
   });
+
+  // user doesn't exist in DB then ?
+  if (!user) throw new ApiError(404, "user doesn't exist");
+
+  // check password is correct or not.
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  // password doesn't exist or not matched
+  if (!isPasswordValid) throw new ApiError(401, "Password is Incorrect");
+
+  // generate the tokens using our top above methods
+  // de- structure
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  // either update user or make a new DB Call
+  // we choose to make a DB call and got getting password and refreshToken
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken",
+  );
+  // Adding Security on Cookies now they are only modifiable by backend , on frontend we can only see them
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res.status(200)
+  //this might fail or wrong.
+  .cookie("accessToken"=accessToken,options)
+  .cookie("accessToken",accessToken,options)
+  .cookie("refreshToken",refreshToken,options)
+  .json(
+    new ApiResponse(
+      200,
+      {
+      user:loggedInUser,accessToken,refreshToken
+      },
+      "user Successfully Loggedin"
+  )
+  )
 });
 
-export { registerUser };
-export { loginUser };
+export { registerUser, loginUser };
