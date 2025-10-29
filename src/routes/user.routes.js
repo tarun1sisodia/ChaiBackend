@@ -1,7 +1,12 @@
 import { Router } from "express";
-import { loginUser, registerUser } from "../controllers/user.controller.js";
+import {
+  loginUser,
+  logoutUser,
+  registerUser,
+} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -16,12 +21,14 @@ router.route("/register").post(
   // Calling the Method
   registerUser,
 );
-router.route("/login").get(loginUser);
+router.route("/login").post(loginUser);
 console.log(router);
-// console.log(upload.fields());
+// Secured Routes
+router.route("/logout").post(verifyJWT, logoutUser);
 
 // Health API
 router
   .route("/health")
   .get((req, res) => res.send(new ApiResponse(200, `Server is Healthy`)));
+
 export default router;

@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import { set } from "mongoose";
 
 // Seperate method for Generate access and refresh token
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -122,6 +123,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
+
 // login User
 const loginUser = asyncHandler(async (req, res) => {
   // Algorithm for LOGIN USER
@@ -173,20 +175,50 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-  return res.status(200)
-  //this might fail or wrong.
-  .cookie("accessToken"=accessToken,options)
-  .cookie("accessToken",accessToken,options)
-  .cookie("refreshToken",refreshToken,options)
-  .json(
-    new ApiResponse(
-      200,
-      {
-      user:loggedInUser,accessToken,refreshToken
-      },
-      "user Successfully Loggedin"
-  )
-  )
+  return (
+    res
+      .status(200)
+      //this might fail or wrong.
+      // .cookie("accessToken"=accessToken,options)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            user: loggedInUser,
+            accessToken,
+            refreshToken,
+          },
+          "user Successfully Loggedin",
+        ),
+      )
+  );
 });
 
-export { registerUser, loginUser };
+// Logout User
+const logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      // using operator of mongodb
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    },
+  );
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User Logged out"));
+});
+
+export { registerUser, loginUser, logoutUser };
