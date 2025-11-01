@@ -288,7 +288,7 @@ const changeCurrentUserPassword = asyncHandler(async (req, res) => {
   // getting old Password & new Password from frontend through user
   const { oldPassword, newPassword } = req.body;
   // now finding user using its unique id
-  const user = await User.findById(req.user?.id);
+  const user = await User.findById(req.user?._id);
   // Here we are not adding error handling because now we know user is already logged in in our situation and scenerio
 
   // after successfully found we are checking user current old password is correct or not.
@@ -317,8 +317,54 @@ const updateAccoundDetails = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
   if (!(fullName || email)) throw new ApiError(401, "All Fields are required");
 
-  const user = await User.findById(req.user?.id);
-  
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: { fullName: fullName, email: email },
+      // $set: { fullName, email },
+    },
+    { new: true },
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account Details Successfully"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar) throw new ApiError(400, "Error While Uploading on Cloudinary");
+
+  await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true },
+  ).select("-password");
+});
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const CoverImageLocalPath = req.file?.path;
+  if (!avatarLocalPath)
+    throw new ApiError(400, "CoverImageLocalPath file is missing");
+  const coverImage = await uploadOnCloudinary(CoverImageLocalPath);
+  if (!coverImage)
+    throw new ApiError(400, "Error While Uploading on Cloudinary");
+
+  await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    { new: true },
+  ).select("-password");
 });
 
 export {
@@ -328,4 +374,7 @@ export {
   refreshAccessToken,
   changeCurrentUserPassword,
   getCurrentUser,
+  updateUserAvatar,
+  updateAccoundDetails,
+  updateUserCoverImage,
 };
