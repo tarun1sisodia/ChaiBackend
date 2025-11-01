@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import jwt from "jsonwebtoken";
 
 // Seperate method for Generate access and refresh token
 // Just need to pass the UserId now we can use it in other functions too.
@@ -249,4 +250,38 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User Logged out"));
 });
 
-export { registerUser, loginUser, logoutUser };
+// Refresh & Access Token Reset
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  try {
+    // Getting Data from frontend or user..
+    const incomingRefreshToken =
+      req.cookies?.refreshToken || req.body.refreshToken;
+
+    // if not found any data on frontend  then throw error
+    if (!incomingRefreshToken) throw new ApiError(401, "UnAuthorized Request");
+
+    // if Found Token from frontend then start verifying it using ENV
+    const decodedToken = await jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+    );
+
+    // now find the who has that token and get its id only not password and refreshToken
+    const user = await User.findById(decodedToken?._id).select(
+      "-password -refreshToken",
+    );
+    // user not found because token is wrong
+    if (!user) throw new ApiError(401, "Invalid Refresh Token");
+    // passing the user in response
+    // calling next ()
+    req.user = user;
+    next();
+  } catch (error) {
+    throw new ApiError(
+      401,
+      `${error?.message}Caught Error While RefreshAccessToken Function `,
+    );
+  }
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken };

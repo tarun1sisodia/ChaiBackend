@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   loginUser,
   logoutUser,
+  refreshAccessToken,
   registerUser,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -25,7 +26,7 @@ router.route("/login").post(loginUser);
 console.log(router);
 // Secured Routes
 router.route("/logout").post(verifyJWT, logoutUser);
-
+router.route("/refresh-token").post(refreshAccessToken);
 // Health API
 router
   .route("/health")

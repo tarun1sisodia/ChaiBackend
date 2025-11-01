@@ -21,13 +21,13 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     console.log(`Not Tokens Found`);
 
     // verifying the token by decoding it & Await is used because may be possible it will take time.
-    const decodeToken = await jwt.verify(
+    const decodedToken = await jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET,
     );
 
     // and after decode finding user by which token we got the id and also exlusiving password and refreshToken
-    const user = await User.findById(decodeToken?._id).select(
+    const user = await User.findById(decodedToken?._id).select(
       "-password -refreshToken",
     );
 
