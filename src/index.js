@@ -4,11 +4,12 @@ import { app } from "./app.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 8000;
+console.debug(`Starting GAME`);
 
 // connecting to Database by calling the file
 connectDB()
   .then(() => {
-    // listening on PORT 
+    // listening on PORT
     app.listen(PORT, () => {
       console.log(`Server is running at PORT http://localhost:${PORT}`);
     });

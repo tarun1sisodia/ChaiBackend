@@ -5,16 +5,20 @@ import dotenv from "dotenv";
 import { User } from "../models/user.model.js";
 dotenv.config();
 
-export const verifyJWT = asyncHandler(async (req, _, next) => {
+const verifyJWT = asyncHandler(async (req, _, next) => {
   try {
     // Accessing the Token from Cookies or Authorization and replace the Bearer with empty string
     // optional is used ? may be mobile Header is provided by mobile to server for which sends Authorization means he/she is authorized & able to access the page or site or account.
     const token =
       req.cookies?.accessToken ||
-      req.Header("Authorization")?.replace("Bearer ", "");
+      // prefer lowercase header key; use req.get to be safe
+      (req.get("Authorization") || "")?.replace("Bearer ", "");
+
+    console.log(`Verifying Token: ${token ?? "no token"}`);
 
     // if token did not work or found
     if (!token) throw new ApiError(401, "UnAuthorized Request");
+    console.log(`Not Tokens Found`);
 
     // verifying the token by decoding it & Await is used because may be possible it will take time.
     const decodeToken = await jwt.verify(
@@ -37,3 +41,5 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     throw new ApiError(401, error?.message || "Invalid Access Token");
   }
 });
+
+export { verifyJWT };

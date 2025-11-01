@@ -3,7 +3,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { set } from "mongoose";
 
 // Seperate method for Generate access and refresh token
 // Just need to pass the UserId now we can use it in other functions too.
@@ -45,9 +44,11 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log(`FullName : ${fullName}`);
 
   // using an array
+  // Check if ANY of the fields is missing/empty (trim -> length)
   if (
-    // import in an array whole data and using some to check are empty or not for validation
-    [fullName, username, email, password].some((field) => field?.trim()) === ""
+    [fullName, username, email, password].some(
+      (field) => !field || !String(field).trim(),
+    )
   ) {
     throw new ApiError(400, "All fields are required");
   }
@@ -140,23 +141,28 @@ const loginUser = asyncHandler(async (req, res) => {
   // 10. Return response with user data (exclude password)
   // De-structuring the the data from req.body
   const { username, email, password } = req.body;
-  
+  console.debug(`req.body ${req.body}`);
+
   // if username NOR email entered then ..
   // if we want only one .
   if (!(username || email))
     throw new ApiError(400, "username or email is required");
+  console.debug(`Atleast Provide username / email`);
 
   // Logic to find user
   const user = await User.findOne({
     // Finding user using either find email or username
     $or: [{ email }, { username }],
   });
+  console.debug(`Found user in DB: ${user}`);
 
   // user doesn't exist in DB then ?
   if (!user) throw new ApiError(404, "user doesn't exist");
 
   // check password is correct or not.
   const isPasswordValid = await user.isPasswordCorrect(password);
+  console.log(`Checking Password Validation: ${isPasswordValid}`);
+
   // password doesn't exist or not matched
   if (!isPasswordValid) throw new ApiError(401, "Password is Incorrect");
 
@@ -166,42 +172,56 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id,
   );
 
+  console.log(`Creating Tokens for user to stay login in system or app.`);
+
   // either update user or make a new DB Call
   // we choose to make a DB call and got getting password and refreshToken
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken",
   );
+
+  console.log(
+    `Excluding Server or DB to not find user._id by password or exclude password and refreshToken`,
+  );
+
   // Adding Security on Cookies now they are only modifiable by backend , on frontend we can only see them
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: false,
+    sameSite: "lax",
+    path: "/",
   };
 
   // This return response will have all important data.
-  return (
-    res
-      .status(200)
-      //this might fail or wrong.
-      // .cookie("accessToken"=accessToken,options)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            user: loggedInUser,
-            accessToken,
-            refreshToken,
-          },
-          "user Successfully Loggedin",
-        ),
-      )
-  );
+  console.log(`User Logged in Successfully: ${loggedInUser}`);
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "user Successfully Loggedin",
+      ),
+    );
 });
 
 // Logout User
 const logoutUser = asyncHandler(async (req, res) => {
   // why w are doing FINDBYIDANDUPDATE because we need to first find user and then update the db and tokens.
+  console.log(
+    `Removing User's Access & Refresh Tokens to discontent with our services`,
+  );
+  console.log(
+    `Finding User by its ID and Updating the DB to undefined or clear the Tokens from his database`,
+  );
+
   await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -214,9 +234,13 @@ const logoutUser = asyncHandler(async (req, res) => {
       new: true,
     },
   );
+  console.log(`Successfully Found user and Removed from device`);
+
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: false,
+    sameSite: "lax",
+    path: "/",
   };
   return res
     .status(200)
