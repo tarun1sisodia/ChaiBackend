@@ -27,6 +27,40 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
+// Refresh & Access Token Reset
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  try {
+    // Getting Data from frontend or user..
+    const incomingRefreshToken =
+      req.cookies?.refreshToken || req.body.refreshToken;
+
+    // if not found any data on frontend  then throw error
+    if (!incomingRefreshToken) throw new ApiError(401, "UnAuthorized Request");
+
+    // if Found Token from frontend then start verifying it using ENV
+    const decodedToken = await jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+    );
+
+    // now find the who has that token and get its id only not password and refreshToken
+    const user = await User.findById(decodedToken?._id).select(
+      "-password -refreshToken",
+    );
+    // user not found because token is wrong
+    if (!user) throw new ApiError(401, "Invalid Refresh Token");
+    // passing the user in response
+    // calling next ()
+    req.user = user;
+    next();
+  } catch (error) {
+    throw new ApiError(
+      401,
+      `${error?.message}Caught Error While RefreshAccessToken Function `,
+    );
+  }
+});
+
 // Register User function
 const registerUser = asyncHandler(async (req, res) => {
   // get user details from frontend
@@ -250,38 +284,48 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User Logged out"));
 });
 
-// Refresh & Access Token Reset
-const refreshAccessToken = asyncHandler(async (req, res) => {
-  try {
-    // Getting Data from frontend or user..
-    const incomingRefreshToken =
-      req.cookies?.refreshToken || req.body.refreshToken;
+const changeCurrentUserPassword = asyncHandler(async (req, res) => {
+  // getting old Password & new Password from frontend through user
+  const { oldPassword, newPassword } = req.body;
+  // now finding user using its unique id
+  const user = await User.findById(req.user?.id);
+  // Here we are not adding error handling because now we know user is already logged in in our situation and scenerio
 
-    // if not found any data on frontend  then throw error
-    if (!incomingRefreshToken) throw new ApiError(401, "UnAuthorized Request");
+  // after successfully found we are checking user current old password is correct or not.
 
-    // if Found Token from frontend then start verifying it using ENV
-    const decodedToken = await jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET,
-    );
+  // IsPasswordCorrect is our method which in User model
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
-    // now find the who has that token and get its id only not password and refreshToken
-    const user = await User.findById(decodedToken?._id).select(
-      "-password -refreshToken",
-    );
-    // user not found because token is wrong
-    if (!user) throw new ApiError(401, "Invalid Refresh Token");
-    // passing the user in response
-    // calling next ()
-    req.user = user;
-    next();
-  } catch (error) {
-    throw new ApiError(
-      401,
-      `${error?.message}Caught Error While RefreshAccessToken Function `,
-    );
-  }
+  if (!isPasswordCorrect) throw new ApiError(400, "invalid Old Password");
+
+  user.password = newPassword;
+  // v uz await cuz database is on another continent which means it will take time ..
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changed Successfully"));
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(200, req.user, "current user fetched Successfully");
+});
+
+const updateAccoundDetails = asyncHandler(async (req, res) => {
+  const { fullName, email, password } = req.body;
+  if (!(fullName || email)) throw new ApiError(401, "All Fields are required");
+
+  const user = await User.findById(req.user?.id);
+  
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentUserPassword,
+  getCurrentUser,
+};
