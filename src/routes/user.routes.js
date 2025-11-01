@@ -29,6 +29,6 @@ router.route("/logout").post(verifyJWT, logoutUser);
 // Health API
 router
   .route("/health")
-  .get((req, res) => res.send(new ApiResponse(200, `Server is Healthy`)));
+  .get((_, res) => res.send(new ApiResponse(200, `Server is Healthy`)));
 
 export default router;

@@ -1,13 +1,14 @@
-import ApiError from "../utils/apiError";
+import ApiError from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { User } from "../models/user.model.js";
 dotenv.config();
 
-export const verifyJWT = asyncHandler(async (req, res, next) => {
+export const verifyJWT = asyncHandler(async (req, _, next) => {
   try {
     // Accessing the Token from Cookies or Authorization and replace the Bearer with empty string
+    // optional is used ? may be mobile Header is provided by mobile to server for which sends Authorization means he/she is authorized & able to access the page or site or account.
     const token =
       req.cookies?.accessToken ||
       req.Header("Authorization")?.replace("Bearer ", "");
@@ -15,7 +16,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     // if token did not work or found
     if (!token) throw new ApiError(401, "UnAuthorized Request");
 
-    // verifying the token by decoding it
+    // verifying the token by decoding it & Await is used because may be possible it will take time.
     const decodeToken = await jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET,

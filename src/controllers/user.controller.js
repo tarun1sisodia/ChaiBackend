@@ -6,12 +6,13 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { set } from "mongoose";
 
 // Seperate method for Generate access and refresh token
+// Just need to pass the UserId now we can use it in other functions too.
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     // find user by ID in monoose
     const user = await User.findById(userId);
 
-    // generating token using our defined methods
+    // generating token using our defined methods in user.model.js
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -137,11 +138,12 @@ const loginUser = asyncHandler(async (req, res) => {
   // 8. Save refresh token to DB (in user document)
   // 9. Send tokens via cookies (httpOnly, secure)
   // 10. Return response with user data (exclude password)
-
+  // De-structuring the the data from req.body
   const { username, email, password } = req.body;
-
+  
   // if username NOR email entered then ..
-  if (!username || !email)
+  // if we want only one .
+  if (!(username || email))
     throw new ApiError(400, "username or email is required");
 
   // Logic to find user
@@ -175,6 +177,7 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
+  // This return response will have all important data.
   return (
     res
       .status(200)
@@ -198,6 +201,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 // Logout User
 const logoutUser = asyncHandler(async (req, res) => {
+  // why w are doing FINDBYIDANDUPDATE because we need to first find user and then update the db and tokens.
   await User.findByIdAndUpdate(
     req.user._id,
     {
