@@ -8,55 +8,133 @@ import jwt from "jsonwebtoken";
 // Seperate method for Generate access and refresh token
 // Just need to pass the UserId now we can use it in other functions too.
 const generateAccessAndRefreshTokens = async (userId) => {
+  // Algorithm
+  // find user using its userID which will be passed during calling function
+  // after getting user generate Tokens(Refresh & Access)
+  // save tokens in Database and update tokens on also frontend
+  // return tokens to user or frontend
+  // Robust generateAccessAndRefreshTokens implementation
+  if (!userId) {
+    throw new ApiError(400, "User ID must be provided to generate tokens");
+  }
+
   try {
-    // find user by ID in monoose
+    // Find user by ID in mongoose
     const user = await User.findById(userId);
 
-    // generating token using our defined methods in user.model.js
+    // Check if user exists
+    if (!user) {
+      throw new ApiError(404, "User not found to generate tokens");
+    }
+
+    // Ensure user schema has token methods
+    if (
+      typeof user.generateAccessToken !== "function" ||
+      typeof user.generateRefreshToken !== "function"
+    ) {
+      throw new ApiError(
+        500,
+        "Token generation functions not found on user model",
+      );
+    }
+
+    // Generate tokens using user's defined methods
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
-    // now save them in DB / MongoDB
-    // use document/ object to save
-    await user.save({ validateBeforeSave: false });
+    // Basic type checks (could be enhanced depending on implementation)
+    if (!accessToken || !refreshToken) {
+      throw new ApiError(500, "Failed to generate access or refresh token");
+    }
 
-    // Return the Tokens to user
+    // Save updated user only if changed (e.g., refreshToken may be stored)
+    // If user.refreshToken property exists, update it
+    if ("refreshToken" in user) {
+      user.refreshToken = refreshToken;
+      await user.save({ validateBeforeSave: false });
+    } else {
+      // Still call save, as in original (safe no-op if nothing to persist)
+      await user.save({ validateBeforeSave: false });
+    }
+
+    // Return the tokens to user
     return { accessToken, refreshToken };
   } catch (error) {
-    throw new ApiError(500, "Failed to Generate Tokens");
+    // Optionally, log error stack for debugging in production environments
+    // console.error("Token generation error:", error);
+    if (error instanceof ApiError) {
+      throw error;
+    } else {
+      throw new ApiError(
+        500,
+        `Failed to generate tokens: ${error.message || error}`,
+      );
+    }
   }
 };
 
 // Refresh & Access Token Reset
 const refreshAccessToken = asyncHandler(async (req, res) => {
+  // Algorithm
+  // get tokens from frontend or user
+  // if not found then throw error
+  // if token matched then start decoding it using env to confirm
+  // now after decoding we will get whole data about user but we only need user who owns this token
+  // if not found user then throw error because we decode the token but when we try to find it in db and nothing gets uz no user never saved that token
+  // if found then return that user and call another middleware or function(userLogin)
   try {
     // Getting Data from frontend or user..
+    // Get refresh token from cookies or request body
     const incomingRefreshToken =
       req.cookies?.refreshToken || req.body.refreshToken;
 
-    // if not found any data on frontend  then throw error
-    if (!incomingRefreshToken) throw new ApiError(401, "UnAuthorized Request");
+    // If refresh token is not present, throw an error
+    if (!incomingRefreshToken) {
+      // Could enhance this area: Log missing token source (cookie vs body)
+      throw new ApiError(401, "Unauthorized Request: Refresh token missing");
+    }
 
-    // if Found Token from frontend then start verifying it using ENV
-    const decodedToken = await jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET,
-    );
+    let decodedToken;
+    try {
+      // Attempt to verify and decode the refresh token using secret
+      decodedToken = await jwt.verify(
+        incomingRefreshToken,
+        process.env.REFRESH_TOKEN_SECRET,
+      );
+    } catch (verifyErr) {
+      // Handle invalid/expired/malformed token errors
+      // You might want to add logging here for debugging
+      throw new ApiError(401, "Invalid or Expired Refresh Token");
+    }
 
-    // now find the who has that token and get its id only not password and refreshToken
-    const user = await User.findById(decodedToken?._id).select(
+    // Ensure the decoded payload contains an _id
+    if (!decodedToken || !decodedToken._id) {
+      throw new ApiError(401, "Malformed token payload: User ID missing");
+    }
+
+    // Find the user associated with the decoded _id
+    const user = await User.findById(decodedToken._id).select(
       "-password -refreshToken",
     );
-    // user not found because token is wrong
-    if (!user) throw new ApiError(401, "Invalid Refresh Token");
-    // passing the user in response
-    // calling next ()
+
+    // If the user does not exist, token is stale or has been tampered with
+    if (!user) {
+      // Consider whether to clear the cookie here as well
+      throw new ApiError(401, "Invalid Refresh Token: User not found");
+    }
+
+    // Place the user object onto the request for downstream middleware handlers
     req.user = user;
+
+    // Proceed to the next middleware or route handler
     next();
+    // All errors are caught by the outer catch
   } catch (error) {
+    // More detailed error message for caller
+    // Consider logging the original error as well
     throw new ApiError(
       401,
-      `${error?.message}Caught Error While RefreshAccessToken Function `,
+      `Error in RefreshAccessToken Function: ${error?.message}`,
     );
   }
 });
@@ -163,92 +241,86 @@ const registerUser = asyncHandler(async (req, res) => {
 
 // login User
 const loginUser = asyncHandler(async (req, res) => {
-  // Algorithm for LOGIN USER
-  // 1. Get user details from frontend (username/email, password)
-  // 2. Validation - check if fields are not empty
-  // 3. Check if user exists in DB (by username or email)
-  // 4. If user doesn't exist, return error or message to use using APIError
-  // 5. Compare plain password with hashed password in DB (using bcrypt.compare)
-  // 6. If password doesn't match, return error
-  // 7. Generate access token and refresh token
-  // 8. Save refresh token to DB (in user document)
-  // 9. Send tokens via cookies (httpOnly, secure)
-  // 10. Return response with user data (exclude password)
-  // De-structuring the the data from req.body
+  // Extracting user info from body
   const { username, email, password } = req.body;
-  console.debug(`req.body ${req.body}`);
+  console.debug("req.body", req.body);
 
-  // if username NOR email entered then ..
-  // if we want only one .
+  // Validation: username or email is required
   if (!(username || email))
     throw new ApiError(400, "username or email is required");
-  console.debug(`Atleast Provide username / email`);
+  console.debug("At least Provide username / email");
 
-  // Logic to find user
+  // Find user by username or email
   const user = await User.findOne({
-    // Finding user using either find email or username
-    $or: [{ email }, { username }],
+    $or: [...(email ? [{ email }] : []), ...(username ? [{ username }] : [])],
   });
-  console.debug(`Found user in DB: ${user}`);
 
-  // user doesn't exist in DB then ?
-  if (!user) throw new ApiError(404, "user doesn't exist");
+  console.debug("Found user in DB:", user ? user._id : null);
 
-  // check password is correct or not.
+  // If user not found
+  if (!user) throw new ApiError(404, "User doesn't exist");
+
+  // Validate password
   const isPasswordValid = await user.isPasswordCorrect(password);
-  console.log(`Checking Password Validation: ${isPasswordValid}`);
+  console.debug("Checking Password Validation:", isPasswordValid);
 
-  // password doesn't exist or not matched
   if (!isPasswordValid) throw new ApiError(401, "Password is Incorrect");
 
-  // generate the tokens using our top above methods
-  // de- structure
+  // Create tokens
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id,
   );
 
-  console.log(`Creating Tokens for user to stay login in system or app.`);
+  // Save refreshToken to DB, if not automatic in generateAccessAndRefreshTokens
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
 
-  // either update user or make a new DB Call
-  // we choose to make a DB call and got getting password and refreshToken
+  // Retrieve user info (exclude sensitive)
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken",
   );
 
-  console.log(
-    `Excluding Server or DB to not find user._id by password or exclude password and refreshToken`,
-  );
-
-  // Adding Security on Cookies now they are only modifiable by backend , on frontend we can only see them
+  // Cookie options based on environment
   const options = {
     httpOnly: true,
-    secure: false,
-    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production", // in prod, only send over https
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     path: "/",
   };
 
-  // This return response will have all important data.
-  console.log(`User Logged in Successfully: ${loggedInUser}`);
+  // Debug cookie settings
+  console.debug("Setting cookies with options:", options);
 
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          user: loggedInUser,
-          accessToken,
-          refreshToken,
-        },
-        "user Successfully Loggedin",
-      ),
-    );
+  // Send tokens as httpOnly cookies
+  res.cookie("accessToken", accessToken, {
+    ...options,
+    maxAge: 1000 * 60 * 15, // 15 minutes, adjust as needed
+  });
+  res.cookie("refreshToken", refreshToken, {
+    ...options,
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days, adjust as needed
+  });
+
+  // Response to client
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: loggedInUser,
+        accessToken,
+        refreshToken,
+      },
+      "User successfully logged in",
+    ),
+  );
 });
 
 // Logout User
 const logoutUser = asyncHandler(async (req, res) => {
+  // Algorithm
+  // take tokens from frontend
+  // set it to undefined on frontend
+  // then automatically user will logout or unable to access any route or controller or anything
   // why w are doing FINDBYIDANDUPDATE because we need to first find user and then update the db and tokens.
   console.log(
     `Removing User's Access & Refresh Tokens to discontent with our services`,
@@ -286,7 +358,10 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 // Change Current User Password
 const changeCurrentUserPassword = asyncHandler(async (req, res) => {
-  // getting old Password & new Password from frontend through user
+  // first get the old password and new password
+  // getting old Password & new Password from frontend through from or body
+  // check current password is same as or not in database using bcrypt function that is defined in model in user
+  // if matched old pass in db then update the current new pass that is passed by user
   const { oldPassword, newPassword } = req.body;
   // now finding user using its unique id
   const user = await User.findById(req.user?._id);
@@ -310,6 +385,8 @@ const changeCurrentUserPassword = asyncHandler(async (req, res) => {
 
 // Get Current User
 const getCurrentUser = asyncHandler(async (req, res) => {
+  // Algorithm:
+  // just send response . because this will send only when user is loggedIN otherwise nothing will be there
   // Just return the req.user simple because we know that user get routes will hit response only when it has data of user.
   return res
     .status(200)
@@ -318,7 +395,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 // Update Account Details
 const updateAccoundDetails = asyncHandler(async (req, res) => {
-  // Getting Data from frontend
+  // Algorithm
+  // Getting Data from frontend what to updated from pre given fields
+  // find user in DB using its unique ID and then start updating data using $set:{ data to update }
   const { fullName, email, password } = req.body;
   // If Data not found then give an error fields.
   if (!(fullName || email)) throw new ApiError(401, "All Fields are required");
@@ -326,6 +405,7 @@ const updateAccoundDetails = asyncHandler(async (req, res) => {
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
+      // Double check it will work or not
       $set: { fullName: fullName, email: email },
       // $set: { fullName, email },
     },

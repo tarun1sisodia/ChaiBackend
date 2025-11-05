@@ -75,8 +75,10 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 // Midldlewares
 // Tokens are same only difference is EXPIRY Duration of them.
 // Access Token - SHORT
-userSchema.methods.generateAccessToken = async function () {
-  jwt.sign(
+userSchema.methods.generateAccessToken = function () {
+  // Note: jwt.sign is synchronous if a callback is not provided
+  // Always return the token so it can be used where the method is called
+  return jwt.sign(
     {
       _id: this._id,
       email: this.email,
@@ -90,9 +92,9 @@ userSchema.methods.generateAccessToken = async function () {
   );
 };
 
-//  refresh Token - LONG Term
-userSchema.methods.generateRefreshToken = async function () {
-  jwt.sign(
+// Refresh Token - LONG Term
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
     {
       _id: this._id,
     },
