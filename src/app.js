@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 
 // routes import
 import userRouter from "./routes/user.routes.js";
+import serverHealth from "./controllers/server.health.js";
 
 dotenv.config();
 
@@ -24,6 +25,6 @@ app.use(cookieParser());
 // routes Declaration
 // Here User hit and router just pass it to UserRouter
 app.use("/api/v1/users", userRouter);
-
+app.get("/health", serverHealth);
 // http://localhost:8000/api/v1/users/register
 export { app };

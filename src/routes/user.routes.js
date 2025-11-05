@@ -6,8 +6,8 @@ import {
   registerUser,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
-import { ApiResponse } from "../utils/apiResponse.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import serverHealth from "../controllers/server.health.js";
 
 const router = Router();
 
@@ -27,9 +27,5 @@ console.log(router);
 // Secured Routes
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
-// Health API
-router
-  .route("/health")
-  .get((_, res) => res.send(new ApiResponse(200, `Server is Healthy`)));
 
 export default router;
