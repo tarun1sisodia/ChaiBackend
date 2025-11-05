@@ -284,6 +284,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User Logged out"));
 });
 
+// Change Current User Password
 const changeCurrentUserPassword = asyncHandler(async (req, res) => {
   // getting old Password & new Password from frontend through user
   const { oldPassword, newPassword } = req.body;
@@ -307,16 +308,21 @@ const changeCurrentUserPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password Changed Successfully"));
 });
 
+// Get Current User
 const getCurrentUser = asyncHandler(async (req, res) => {
+  // Just return the req.user simple because we know that user get routes will hit response only when it has data of user.
   return res
     .status(200)
     .json(200, req.user, "current user fetched Successfully");
 });
 
+// Update Account Details
 const updateAccoundDetails = asyncHandler(async (req, res) => {
+  // Getting Data from frontend
   const { fullName, email, password } = req.body;
+  // If Data not found then give an error fields.
   if (!(fullName || email)) throw new ApiError(401, "All Fields are required");
-
+  // finding user using FindByID&Update
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
@@ -331,13 +337,18 @@ const updateAccoundDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Account Details Successfully"));
 });
 
+// Update User Avatar
 const updateUserAvatar = asyncHandler(async (req, res) => {
+  // getting the path of file for avatar to set it on cloudinary for user to update it
   const avatarLocalPath = req.file?.path;
+  // if not found then throw and custom error
   if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
+  // very imp to upload image or file on cloudinary to update the avatar
   const avatar = await uploadOnCloudinary(avatarLocalPath);
+  // if we failed while uploading the avatar on cloudinary then hit this custom error msg
   if (!avatar) throw new ApiError(400, "Error While Uploading on Cloudinary");
-
-  await User.findByIdAndUpdate(
+  // success and find the user and updating the details and removing password to not get select and updated btw it will not update because we have added an check their on MONGODB FILE
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -346,8 +357,12 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     },
     { new: true },
   ).select("-password");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "updated Avatar Imagez Successfully"));
 });
 
+// Update the cover Image of user just like we did on avatar function or method
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const CoverImageLocalPath = req.file?.path;
   if (!avatarLocalPath)
@@ -356,7 +371,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!coverImage)
     throw new ApiError(400, "Error While Uploading on Cloudinary");
 
-  await User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -365,6 +380,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     },
     { new: true },
   ).select("-password");
+  //sending response to frontend
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Updated Cover Image Successfully"));
 });
 
 export {

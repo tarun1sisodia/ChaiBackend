@@ -50,19 +50,25 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 // added the logic to  hash the password before saving it if password is being modified.
+// Pre Says run me before saving anything into DB
 userSchema.pre("save", async function (next) {
   // fixed the isModified Typo Error
+  // Password modified nhi hua h to this next() krdo taki vo age run kr sake code and save krde.
   if (!this.isModified("password")) return next();
   try {
     this.password = await bcrypt.hash(this.password, 10);
     next();
-  } catch (error) {
-    next(error);
+  } catch {
+    (err) => next(err);
   }
 });
 
-// custom methods to check password is correct or not? 
+// Check krna bhi baht important h ki password sahi h ya nhi
+// custom methods to check password is correct or not?
+// password user pass krega yahan
 userSchema.methods.isPasswordCorrect = async function (password) {
+  // bcrypt return krega false ya true.
+  // password--user, this.password - encrptyed passworded
   return await bcrypt.compare(password, this.password);
 };
 
