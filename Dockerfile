@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:18-alpine AS builder
+FROM node:lts-alpine AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN npm ci
 COPY . .
 
 # Stage 2: Production
-FROM node:18-alpine
+FROM node:lts-alpine
 
 WORKDIR /app
 

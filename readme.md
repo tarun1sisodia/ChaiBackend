@@ -69,6 +69,16 @@ Copy `.env.example` to `.env` and set:
    npm run dev
    or
    node src/index.js
+   
+## Docker Setup (Recommended)
+1. Clone the repo.
+2. Copy `.env.example` to `.env` and fill in your secrets (MongoDB URI, Cloudinary keys, etc.).
+3. Run:
+   ```bash
+   docker-compose up
+   ```
+   This will build the image and start the server on port 8000.
+
 
 ## Running tests
 - Ensure tests use separate test DB or in-memory DB (mongodb-memory-server).
@@ -105,7 +115,7 @@ Suggested branching model:
 - Add authentication (JWT + refresh).
 - Add role-based access control.
 - Add full test coverage (unit + integration) and CI pipeline (GitHub Actions).
-- Add Docker and docker-compose for local development.
+- Add Docker and docker-compose for local development (Done).
 - Add logging & monitoring (winston, Sentry).
 - Improve rate-limiting, validation (Joi), and sanitization.
 
