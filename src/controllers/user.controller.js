@@ -4,7 +4,8 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
-
+import deleteLocalFiles from "../utils/deleteLocalFile.server.js";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 // Seperate method for Generate access and refresh token
 // Just need to pass the UserId now we can use it in other functions too.
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -181,9 +182,9 @@ const registerUser = asyncHandler(async (req, res) => {
   // optional Chaining
   // or Use Clasical IF else to debug
   const avatarLocalpath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
-  console.log(avatarLocalpath[1]?.path);
+  console.log(avatarLocalpath);
 
   /*  let coverImageLocalPath;
 
@@ -294,11 +295,11 @@ const loginUser = asyncHandler(async (req, res) => {
   // Send tokens as httpOnly cookies
   res.cookie("accessToken", accessToken, {
     ...options,
-    maxAge: 1000 * 60 * 15, // 15 minutes, adjust as needed
+    maxAge: Number(process.env.ACCESS_TOKEN_EXPIRY), // 15 minutes, adjust as needed
   });
   res.cookie("refreshToken", refreshToken, {
     ...options,
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days, adjust as needed
+    maxAge: Number(process.env.REFRESH_TOKEN_EXPIRY), // 7 days, adjust as needed
   });
 
   // Response to client
@@ -390,14 +391,15 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   // Just return the req.user simple because we know that user get routes will hit response only when it has data of user.
   return res
     .status(200)
-    .json(200, req.user, "current user fetched Successfully");
+    .json(new ApiResponse(200, req.user, "current user fetched Successfully"));
 });
 
 // Update Account Details
-const updateAccoundDetails = asyncHandler(async (req, res) => {
+const updateAccountDetails = asyncHandler(async (req, res) => {
   // Algorithm
   // Getting Data from frontend what to updated from pre given fields
   // find user in DB using its unique ID and then start updating data using $set:{ data to update }
+  // password is not important
   const { fullName, email, password } = req.body;
   // If Data not found then give an error fields.
   if (!(fullName || email)) throw new ApiError(401, "All Fields are required");
@@ -421,6 +423,7 @@ const updateAccoundDetails = asyncHandler(async (req, res) => {
 const updateUserAvatar = asyncHandler(async (req, res) => {
   // getting the path of file for avatar to set it on cloudinary for user to update it
   const avatarLocalPath = req.file?.path;
+  const avatarLocalPathToDelete = req.user?.avatar;
   // if not found then throw and custom error
   if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
   // very imp to upload image or file on cloudinary to update the avatar
@@ -437,6 +440,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     },
     { new: true },
   ).select("-password");
+  // to be tested in future
+  await deleteLocalFiles(avatarLocalPathToDelete);
   return res
     .status(200)
     .json(new ApiResponse(200, user, "updated Avatar Imagez Successfully"));
@@ -445,7 +450,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 // Update the cover Image of user just like we did on avatar function or method
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const CoverImageLocalPath = req.file?.path;
-  if (!avatarLocalPath)
+  const CoverImageLocalPathToDelete = CoverImageLocalPath;
+  if (!CoverImageLocalPath)
     throw new ApiError(400, "CoverImageLocalPath file is missing");
   const coverImage = await uploadOnCloudinary(CoverImageLocalPath);
   if (!coverImage)
@@ -461,9 +467,83 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     { new: true },
   ).select("-password");
   //sending response to frontend
+  // TO BE TESTED
+  await deleteLocalFiles(CoverImageLocalPathToDelete);
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Updated Cover Image Successfully"));
+});
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+
+  const { username } = req.params;
+
+  if (!username) {
+    throw new ApiError(400,"Username is missing");
+  }
+
+  // first we found the username using match.
+  const channel = await User.aggregate([
+  {
+    $match:{
+      username = username?.toLowerCase()
+    }
+  },
+  // now we are getting all the subscribers from channels
+  {
+    $lookup:{
+      from:"subscriptions",
+      localField:"_id",
+      foreignField:"channel",
+      as:"subscribers"
+    }
+  },
+  // now we get the subscriber which are subscribed
+  {
+    $lookup:{
+      from:"subscriptions",
+      localField:"_id",
+      foreignField:"subscriber", // maye be u need to use plural for that
+      as:"subscribedTo"
+    }
+  },
+  // now count both subscribers and channels which are subscribered by me.
+  {
+    $addFields:{
+      subscribersCount:{
+        $size:"$subscribers"
+      },
+      channelsSubscribedToCount:{
+          $size:"$subscribedTo"
+      },
+      isSubscribed:{
+        $cond:{
+          if:{$in:[req.user?._id,"$subscribers.subscriber"]},
+          then:true,
+          else:false
+        }
+ 
+      }
+    }
+  },
+  {
+    $project:{
+      fullName:1,
+      username:1,
+      subscribersCount:1,
+      channelsSubscribedToCount:1,
+      isSubscribed:1,
+      avatar:1,
+      email:1,
+      coverImage:1,
+      createdAt:1
+    }
+  }
+  ]);
+  if(!channel?.length) throw new ApiError(400,"Channel doesn't exist");
+  return res.status(200).json(new ApiResponse(200, channel[0], "Channel profile fetched successfully"));
+  
+  return res.status(200).json(new ApiResponse(200,channel[0],"User Channel fetched Successfully"))
 });
 
 export {
@@ -474,6 +554,7 @@ export {
   changeCurrentUserPassword,
   getCurrentUser,
   updateUserAvatar,
-  updateAccoundDetails,
+  updateAccountDetails,
   updateUserCoverImage,
+  getUserChannelProfile
 };
