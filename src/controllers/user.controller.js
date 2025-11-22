@@ -475,77 +475,142 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-
   const { username } = req.params;
 
   if (!username) {
-    throw new ApiError(400,"Username is missing");
+    throw new ApiError(400, "Username is missing");
   }
 
   // first we found the username using match.
   const channel = await User.aggregate([
-  {
-    $match:{
-      username = username?.toLowerCase()
-    }
-  },
-  // now we are getting all the subscribers from channels
-  {
-    $lookup:{
-      from:"subscriptions",
-      localField:"_id",
-      foreignField:"channel",
-      as:"subscribers"
-    }
-  },
-  // now we get the subscriber which are subscribed
-  {
-    $lookup:{
-      from:"subscriptions",
-      localField:"_id",
-      foreignField:"subscriber", // maye be u need to use plural for that
-      as:"subscribedTo"
-    }
-  },
-  // now count both subscribers and channels which are subscribered by me.
-  {
-    $addFields:{
-      subscribersCount:{
-        $size:"$subscribers"
+    {
+      $match: {
+        username: username?.toLowerCase(),
       },
-      channelsSubscribedToCount:{
-          $size:"$subscribedTo"
+    },
+    // now we are getting all the subscribers from channels
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
       },
-      isSubscribed:{
-        $cond:{
-          if:{$in:[req.user?._id,"$subscribers.subscriber"]},
-          then:true,
-          else:false
-        }
- 
-      }
-    }
-  },
-  {
-    $project:{
-      fullName:1,
-      username:1,
-      subscribersCount:1,
-      channelsSubscribedToCount:1,
-      isSubscribed:1,
-      avatar:1,
-      email:1,
-      coverImage:1,
-      createdAt:1
-    }
-  }
+    },
+    // now we get the subscriber which are subscribed
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber", // maye be u need to use plural for that
+        as: "subscribedTo",
+      },
+    },
+    // now count both subscribers and channels which are subscribered by me.
+    {
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        email: 1,
+        coverImage: 1,
+        createdAt: 1,
+      },
+    },
   ]);
-  if(!channel?.length) throw new ApiError(400,"Channel doesn't exist");
-  return res.status(200).json(new ApiResponse(200, channel[0], "Channel profile fetched successfully"));
-  
-  return res.status(200).json(new ApiResponse(200,channel[0],"User Channel fetched Successfully"))
+  if (!channel?.length) throw new ApiError(400, "Channel doesn't exist");
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "Channel profile fetched successfully"),
+    );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User Channel fetched Successfully"),
+    );
 });
 
+const getUserHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        // here we are going to write sub pipelines and more depth.
+        // pipeline 1;
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              // sub pipeline 1;
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          // this is for frontend reliability.
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields,
+    },
+  ]);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Fetch user Data successfully",
+      ),
+    );
+});
 export {
   registerUser,
   loginUser,
@@ -556,5 +621,5 @@ export {
   updateUserAvatar,
   updateAccountDetails,
   updateUserCoverImage,
-  getUserChannelProfile
+  getUserChannelProfile,
 };
