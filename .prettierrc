@@ -1,12 +1,12 @@
 {
-    "SingleQuote": false,
-    "TabWidth": 2,
-    "TrailingComma": "es5",
-    "PrintWidth": 120,
-    "ArrowParens": "always",
-    "EndOfLine": "lf",
-    "Semi": true,
-    "QuoteProps": "as-needed",
-    "SingleAttributePerLine": true,
-    "BracketSpacing": true
+  "singleQuote": false,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "printWidth": 120,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "semi": true,
+  "quoteProps": "as-needed",
+  "singleAttributePerLine": true,
+  "bracketSpacing": true
 }

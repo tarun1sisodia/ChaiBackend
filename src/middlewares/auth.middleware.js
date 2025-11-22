@@ -23,15 +23,10 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     }
 
     // verifying the token by decoding it & Await is used because may be possible it will take time.
-    const decodedToken = await jwt.verify(
-      token,
-      process.env.ACCESS_TOKEN_SECRET,
-    );
+    const decodedToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
     // and after decode finding user by which token we got the id and also exlusiving password and refreshToken
-    const user = await User.findById(decodedToken?._id).select(
-      "-password -refreshToken",
-    );
+    const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
 
     // userID mili ni to ye run hoga
     if (!user) throw new ApiError(401, "Invalid Access Token");

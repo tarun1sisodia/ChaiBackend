@@ -12,7 +12,7 @@ const connectDB = async () => {
     // Connecting to MongoDB
     const connectionInstance = await mongoose.connect(uri);
     console.log(
-      `********************Connection Name: ${connectionInstance.connection.name}********************\n********************Database Name:   ${connectionInstance.connection.db.databaseName}********************`,
+      `********************Connection Name: ${connectionInstance.connection.name}********************\n********************Database Name:   ${connectionInstance.connection.db.databaseName}********************`
     );
   } catch (err) {
     console.error(`MONGODB Connection Failed at DB :${err}`);
