@@ -490,11 +490,12 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
     // now we are getting all the subscribers from channels
     {
+      // LEFT JOIN subscriptions ON user._id = subscriptions.channel
       $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foreignField: "channel",
-        as: "subscribers",
+        from: "subscriptions", // Look in subscriptions collection
+        localField: "_id", // User's ID
+        foreignField: "channel", // Match where channel = this user's ID
+        as: "subscribers", // Store results in "subscribers" array
       },
     },
     // now we get the subscriber which are subscribed
@@ -502,28 +503,31 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       $lookup: {
         from: "subscriptions",
         localField: "_id",
-        foreignField: "subscriber", // maye be u need to use plural for that
+        foreignField: "subscriber", // Match where subscriber = this user's ID
         as: "subscribedTo",
       },
     },
     // now count both subscribers and channels which are subscribered by me.
     {
       $addFields: {
-        subscribersCount: {
-          $size: "$subscribers",
-        },
-        channelsSubscribedToCount: {
-          $size: "$subscribedTo",
-        },
+        subscribersCount: { $size: "$subscribers" }, // Count array length
+        channelsSubscribedToCount: { $size: "$subscribedTo" }, // Count array length
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] }, // Check if current logged-in user is in subscribers array
             then: true,
             else: false,
           },
         },
       },
     },
+    /*
+    - subscribersCount: How many people subscribed to this channel
+    - channelsSubscribedToCount: How many channels this user subscribed to
+    - isSubscribed: Is the logged-in user subscribed to this channel? (Boolean)
+    * Finally, project only the fields we want to return
+    * This removes the subscribers and subscribedTo arrays from the output
+    */
     {
       $project: {
         fullName: 1,
@@ -539,12 +543,6 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
   ]);
   if (!channel?.length) throw new ApiError(400, "Channel doesn't exist");
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, channel[0], "Channel profile fetched successfully"),
-    );
-
   return res
     .status(200)
     .json(
