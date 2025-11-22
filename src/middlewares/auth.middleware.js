@@ -17,8 +17,10 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     console.log(`Verifying Token: ${token ?? "no token"}`);
 
     // if token did not work or found
-    if (!token) throw new ApiError(401, "UnAuthorized Request");
-    console.log(`Not Tokens Found`);
+    if (!token) {
+      console.log(`No Token Found`);
+      throw new ApiError(401, "UnAuthorized Request");
+    }
 
     // verifying the token by decoding it & Await is used because may be possible it will take time.
     const decodedToken = await jwt.verify(

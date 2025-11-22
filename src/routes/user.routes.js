@@ -8,14 +8,13 @@ import {
   changeCurrentUserPassword,
   getCurrentUser,
   updateAccountDetails,
-  updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
   getUserHistory,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import serverHealth from "../controllers/server.health.js";
+
 
 const router = Router();
 
@@ -35,7 +34,7 @@ console.log(router);
 // Secured Routes
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
-router.route("/update-avatar").post(updateUserAvatar);
+router.route("/update-avatar").post(verifyJWT, updateUserAvatar);
 router.route("/change-password").post(verifyJWT, changeCurrentUserPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
@@ -46,7 +45,7 @@ router
 
 router
   .route("/coverImage-update")
-  .patch(verifyJWT, upload.single(".coverImage"), updateUserCoverImage);
+  .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 router.route("/history").get(verifyJWT, getUserHistory);
 
