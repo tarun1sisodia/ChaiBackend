@@ -36,6 +36,6 @@ const videoSchema = new Schema(
       ref: "User",
     },
   },
-  { timestamps: true }, //for default createdAt, updatedAt
+  { timestamps: true } //for default createdAt, updatedAt
 ).videoSchema.plugin(mongooseAggregatePaginate);
 export const Video = mongoose.model("Video", videoSchema);

@@ -15,7 +15,6 @@ import {
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
-
 const router = Router();
 
 // Setting up router apis
@@ -27,7 +26,7 @@ router.route("/register").post(
     { name: "coverImage", maxCount: 1 },
   ]),
   // Calling the Method
-  registerUser,
+  registerUser
 );
 router.route("/login").post(loginUser);
 console.log(router);
@@ -39,13 +38,9 @@ router.route("/change-password").post(verifyJWT, changeCurrentUserPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
 
-router
-  .route("/avatar-update")
-  .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
+router.route("/avatar-update").patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
 
-router
-  .route("/coverImage-update")
-  .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
+router.route("/coverImage-update").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 router.route("/history").get(verifyJWT, getUserHistory);
 
