@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import deleteLocalFiles from "../utils/deleteLocalFile.server.js";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import mongoose from "mongoose";
 // Seperate method for Generate access and refresh token
 // Just need to pass the UserId now we can use it in other functions too.
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -595,9 +596,7 @@ const getUserHistory = asyncHandler(async (req, res) => {
         ],
       },
     },
-    {
-      $addFields,
-    },
+
   ]);
   return res
     .status(200)
@@ -620,4 +619,5 @@ export {
   updateAccountDetails,
   updateUserCoverImage,
   getUserChannelProfile,
+  getUserHistory,
 };
