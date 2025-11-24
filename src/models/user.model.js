@@ -6,17 +6,17 @@ const userSchema = new mongoose.Schema(
   {
     username: {
       type: String,
-      required: true,
+      required: [true, "Username is Required"],
       unique: true,
-      lowercase: true,
+      lowercase: [true, "Username must be in lowercase"],
       trim: true,
       index: true, // TO Enable searching field with more optimization
     },
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is Required"],
       unique: true,
-      lowercase: true,
+      lowercase: [true, "Email must be in lowercase"],
       trim: true,
     },
     password: {
@@ -26,13 +26,13 @@ const userSchema = new mongoose.Schema(
     },
     fullName: {
       type: String,
-      required: true,
+      required: [true, "Full Name is Required"],
       trim: true,
       index: true,
     },
     avatar: {
       type: String, //cloudinary
-      required: true,
+      required: [true, "Avatar is Required"],
     },
     coverImage: {
       type: String,

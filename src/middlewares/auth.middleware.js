@@ -3,6 +3,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { User } from "../models/user.model.js";
+import logger from "../utils/logger.js";
+
 dotenv.config();
 
 const verifyJWT = asyncHandler(async (req, _, next) => {
@@ -14,11 +16,11 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
       // prefer lowercase header key; use req.get to be safe
       (req.get("Authorization") || "")?.replace("Bearer ", "");
 
-    console.log(`Verifying Token: ${token ?? "no token"}`);
+    logger.debug(`Verifying Token: ${token ? "Token present" : "No token"}`);
 
     // if token did not work or found
     if (!token) {
-      console.log(`No Token Found`);
+      logger.warn(`No Token Found`);
       throw new ApiError(401, "UnAuthorized Request");
     }
 
@@ -29,12 +31,16 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
 
     // userID mili ni to ye run hoga
-    if (!user) throw new ApiError(401, "Invalid Access Token");
+    if (!user) {
+      logger.warn(`Token valid but user not found: ${decodedToken?._id}`);
+      throw new ApiError(401, "Invalid Access Token");
+    }
 
     //  user mil gya to ye run hoga aur next se call hoga agla functions.
     req.user = user;
     next();
   } catch (error) {
+    logger.error(`JWT Verification Failed: ${error?.message}`);
     throw new ApiError(401, error?.message || "Invalid Access Token");
   }
 });
