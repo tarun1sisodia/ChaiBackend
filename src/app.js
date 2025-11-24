@@ -31,7 +31,8 @@ app.use(limiter);
 // set up whole middleware configurations
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: [process.env.CORS_ORIGIN, "http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
   })
 );
 app.use(express.json({ limit: "16kb" }));
