@@ -1,40 +1,33 @@
 {
   "name": "chaibackend",
-  "version": "1.0.0",
-  "description": "A Basic Chai ",
+  "version": "1.0.1",
+  "description": "Starting the Series again..",
   "keywords": [
     "node",
-    "Chai"
+    "keyword"
   ],
-  "license": "ISC",
+  "homepage": "https://github.com/tarun1sisodia/ChaiBackend#readme",
+  "bugs": {
+    "url": "https://github.com/tarun1sisodia/ChaiBackend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tarun1sisodia/ChaiBackend.git"
+  },
+  "license": "MIT",
   "author": "Tarun Sisodia",
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "format:check": "prettier --check ."
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "body-parser": "^2.2.0",
-    "cloudinary": "^2.7.0",
-    "compression": "^1.8.1",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.2.1",
-    "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.3",
-    "mongoose-aggregate-paginate-v2": "^1.1.4",
-    "morgan": "^1.10.1",
-    "multer": "^2.0.2",
-    "redis": "^5.9.0"
+    "express": "^5.2.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
-    "prettier": "^3.6.2"
+    "dotenv": "^17.4.2",
+    "nodemon": "^3.1.14"
   }
 }
