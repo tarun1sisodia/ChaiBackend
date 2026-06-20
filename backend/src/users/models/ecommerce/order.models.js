@@ -11,6 +11,27 @@ const orderItemSchema = new Schema({
         required: true
     }
 });
+const addressSchema = new Schema({
+    village: {
+        type: String,
+    },
+    city: {
+        type: String,
+        required: true
+    },
+    street: {
+        type: String,
+    },
+    State: {
+        type: String,
+        required: true,
+    },
+    houseNo: {
+        type: Number,
+        required: true
+    }
+
+})
 const orderSchema = new Schema({
     orderPrice: {
         type: mongoose.Schema.Types.ObjectId,
